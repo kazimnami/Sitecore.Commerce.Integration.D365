@@ -71,7 +71,7 @@ namespace SampleIntegrationD365.Feature.Inventory.Engine
                     {"dataareaid", "au"},
                 };
 
-                var stringResponse = await connection.GetJsonApiResponse(url, request);
+                var stringResponse = await connection.PostJson(url, request);
                 if (!decimal.TryParse(stringResponse, out decimal stockAmount))
                 {
                     throw new Exception($"Error from URL: '{url}', unable to get stock information for product ID '{sellableItem.ProductId}'. Response is: '{stringResponse}'.");

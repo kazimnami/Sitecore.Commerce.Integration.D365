@@ -15,12 +15,11 @@ namespace SampleIntegrationD365.Feature.Inventory.Engine
     //[PipelineDisplayName(AvailabilityConstants.PopulateDefaultItemAvailabilityComponentBlock)]
     public class CreateD365InventorySetBlock : PipelineBlock<ItemAvailabilityComponent, ItemAvailabilityComponent, CommercePipelineExecutionContext>
     {
-        private readonly IGetSellableItemPipeline _getSellableItemPipeline;
+        private readonly CommerceCommander _commander;
 
-        public CreateD365InventorySetBlock(
-            IGetSellableItemPipeline getSellableItemPipeline)
+        public CreateD365InventorySetBlock(CommerceCommander commander)
         {
-            this._getSellableItemPipeline = getSellableItemPipeline;
+            _commander = commander;
         }
 
         public override async Task<ItemAvailabilityComponent> Run(ItemAvailabilityComponent arg, CommercePipelineExecutionContext context)
@@ -32,7 +31,7 @@ namespace SampleIntegrationD365.Feature.Inventory.Engine
 
             var productArgument = ProductArgument.FromItemId(arg.ItemId);
             var sellableItem = context.CommerceContext.GetEntity<SellableItem>(x => x.Id.Equals($"{CommerceEntity.IdPrefix<SellableItem>()}{productArgument.ProductId}", StringComparison.OrdinalIgnoreCase))
-                               ?? await this._getSellableItemPipeline.Run(productArgument, context).ConfigureAwait(false);
+                               ?? await _commander.Pipeline<IGetSellableItemPipeline>().Run(productArgument, context).ConfigureAwait(false);
 
             if (sellableItem == null || !sellableItem.Tags.Any(t => t.Name.Equals("D365")))
             {

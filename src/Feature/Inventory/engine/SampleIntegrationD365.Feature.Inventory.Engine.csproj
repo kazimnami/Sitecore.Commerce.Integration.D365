@@ -7,6 +7,8 @@
 
   <ItemGroup>
     <PackageReference Include="Sitecore.Commerce.Plugin.Inventory" Version="3.0.*" />
+    <PackageReference Include="Sitecore.Commerce.Plugin.Fulfillment" Version="3.0.*" />
+    <PackageReference Include="Sitecore.Commerce.Plugin.Entitlements" Version="3.0.*" />
   </ItemGroup>
 
 </Project>

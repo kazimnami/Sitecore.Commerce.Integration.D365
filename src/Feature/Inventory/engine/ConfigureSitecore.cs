@@ -3,7 +3,10 @@ using Sitecore.Commerce.Core;
 using Sitecore.Commerce.Plugin.Availability;
 using Sitecore.Commerce.Plugin.Carts;
 using Sitecore.Commerce.Plugin.Catalog;
+using Sitecore.Commerce.Plugin.Entitlements;
+using Sitecore.Commerce.Plugin.Fulfillment;
 using Sitecore.Commerce.Plugin.Inventory;
+using Sitecore.Commerce.Plugin.Orders;
 using Sitecore.Framework.Configuration;
 using Sitecore.Framework.Pipelines.Definitions.Extensions;
 using System.Reflection;
@@ -18,35 +21,28 @@ namespace SampleIntegrationD365.Feature.Inventory.Engine
             services.RegisterAllPipelineBlocks(assembly);
 
             services.Sitecore().Pipelines(config => config
+                // Inventory
                 .ConfigurePipeline<IGetInventoryInformationPipeline>(p =>
                 {
-                    p.Replace<Sitecore.Commerce.Plugin.Inventory.GetInventoryInformationBlock, SampleIntegrationD365.Feature.Inventory.Engine.GetInventoryInformationBlock>();
+                    p.Replace<Sitecore.Commerce.Plugin.Inventory.GetInventoryInformationBlock, GetInventoryInformationBlock>();
                 })
-                //TODO: Remove
+                // Inventory
                 .ConfigurePipeline<IPopulateItemAvailabilityComponentPipeline>(p =>
                 {
-                    p.Add<SampleIntegrationD365.Feature.Inventory.Engine.CreateD365InventorySetBlock>().Before<Sitecore.Commerce.Plugin.Inventory.PopulateItemAvailabilityComponentBlock>();
-                    p.Replace<Sitecore.Commerce.Plugin.Inventory.PopulateItemAvailabilityComponentBlock, SampleIntegrationD365.Feature.Inventory.Engine.PopulateItemAvailabilityComponentBlock>();
+                    p.Add<CreateD365InventorySetBlock>().Before<PopulateItemAvailabilityComponentBlock>();
                 })
-                //TODO: Remove
-                .ConfigurePipeline<IPopulateItemAvailabilityPipeline>(p =>
-                {
-                    p.Replace<Sitecore.Commerce.Plugin.Inventory.PopulateItemAvailabilityBlock, SampleIntegrationD365.Feature.Inventory.Engine.PopulateItemAvailabilityBlock>();
-                })
-                //TODO: Remove
-                .ConfigurePipeline<IPopulateLineItemPipeline>(p =>
-                {
-                    p.Replace<Sitecore.Commerce.Plugin.Inventory.PopulateLineItemInventoryBlock, SampleIntegrationD365.Feature.Inventory.Engine.PopulateLineItemInventoryBlock>();
-                })
-                //TODO: Remove
-                .ConfigurePipeline<IPopulateLineItemPipeline>(p =>
-                {
-                    p.Add<TestBlock>().After<CalculateCartLinePriceBlock>();
-                    p.Add<TestBlock>().After<ValidateCartLinePriceBlock>();
-                })
+                // Pricing
                 .ConfigurePipeline<ICalculateSellableItemPricesPipeline>(p =>
                 {
                     p.Add<CalculateSellableItemD365PriceBlock>().Before<ReconcileSellableItemPricesBlock>();
+                })
+                // Order Transmission
+                .ConfigurePipeline<IReleasedOrdersMinionPipeline>(p =>
+                {
+                    p.Add<SendOrderToD365>().Before<MoveReleasedOrderBlock>();
+                    p.Remove<GenerateOrderShipmentBlock>();
+                    p.Remove<GenerateOrderLinesShipmentBlock>();
+                    p.Remove<GenerateOrderEntitlementsBlock>();
                 })
             );
         }

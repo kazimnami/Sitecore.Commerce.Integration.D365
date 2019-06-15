@@ -38,7 +38,7 @@ namespace SampleIntegrationD365.Feature.Inventory.Engine
                     {"qty", "1"},
                 };
 
-                var stringResponse = await connection.GetJsonApiResponse(url, request);
+                var stringResponse = await connection.PostJson(url, request);
                 if (!decimal.TryParse(stringResponse, out decimal price))
                 {
                     throw new Exception($"Error from URL: '{url}', unable to get price information for Product ID '{arg.ProductId}'. Response is: '{stringResponse}'.");
