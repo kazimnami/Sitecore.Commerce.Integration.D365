@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using SampleIntegrationD365.Foundation.D365.Engine;
 using Sitecore.Commerce.Core;
 using Sitecore.Commerce.Plugin.Catalog;
 using Sitecore.Commerce.Plugin.Pricing;
 using Sitecore.Framework.Pipelines;
 
-namespace SampleIntegrationD365.Feature.Inventory.Engine
+namespace SampleIntegrationD365.Feature.Pricing.Engine
 {
     //[PipelineDisplayName(CatalogConstants.ReconcileSellableItemPricesBlock)]
     public class CalculateSellableItemD365PriceBlock : PipelineBlock<SellableItem, SellableItem, CommercePipelineExecutionContext>
@@ -38,13 +39,14 @@ namespace SampleIntegrationD365.Feature.Inventory.Engine
                     {"qty", "1"},
                 };
 
-                var stringResponse = await connection.PostJson(url, request);
+                var stringResponse = await connection.Post(url, request);
                 if (!decimal.TryParse(stringResponse, out decimal price))
                 {
                     throw new Exception($"Error from URL: '{url}', unable to get price information for Product ID '{arg.ProductId}'. Response is: '{stringResponse}'.");
                 }
 
                 arg.ListPrice = new Money(context.CommerceContext.CurrentCurrency(), price);
+                //arg.GetComponent<ItemVariationsComponent>().Variations.ForEach(v => v.ListPrice = arg.ListPrice);
                 arg.GetComponent<MessagesComponent>().AddMessage(context.GetPolicy<KnownMessageCodePolicy>().Pricing, $"ListPrice<=D365Price: Price={arg.ListPrice.AsCurrency()}");
             }
             catch (Exception ex)
@@ -52,8 +54,6 @@ namespace SampleIntegrationD365.Feature.Inventory.Engine
                 Console.WriteLine(ex.ToString());
                 throw new Exception($"Error, unable to get price information for product ID '{arg.ProductId}'.", ex);
             }
-
-            // TODO Variations
 
             return arg;
         }

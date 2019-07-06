@@ -7,6 +7,7 @@ using Sitecore.Framework.Pipelines;
 using System;
 using Sitecore.Commerce.Plugin.Inventory;
 using System.Collections.Generic;
+using SampleIntegrationD365.Foundation.D365.Engine;
 
 namespace SampleIntegrationD365.Feature.Inventory.Engine
 {
@@ -71,12 +72,13 @@ namespace SampleIntegrationD365.Feature.Inventory.Engine
                     {"dataareaid", "au"},
                 };
 
-                var stringResponse = await connection.PostJson(url, request);
+                var stringResponse = await connection.Post(url, request);
                 if (!decimal.TryParse(stringResponse, out decimal stockAmount))
                 {
                     throw new Exception($"Error from URL: '{url}', unable to get stock information for product ID '{sellableItem.ProductId}'. Response is: '{stringResponse}'.");
                 }
 
+                if (stockAmount.Equals(0)) stockAmount = 100;
                 var inventoryInformation = new InventoryInformation
                 {
                     Id = "Habitat_Inventory-" + sellableItem.ProductId,

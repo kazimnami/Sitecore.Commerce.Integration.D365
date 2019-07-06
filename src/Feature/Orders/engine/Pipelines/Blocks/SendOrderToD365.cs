@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SampleIntegrationD365.Foundation.D365.Engine;
 using Sitecore.Commerce.Core;
 using Sitecore.Commerce.Plugin.Carts;
 using Sitecore.Commerce.Plugin.ManagedLists;
@@ -14,7 +15,7 @@ using Sitecore.Commerce.Plugin.Pricing;
 using Sitecore.Framework.Conditions;
 using Sitecore.Framework.Pipelines;
 
-namespace SampleIntegrationD365.Feature.Inventory.Engine
+namespace SampleIntegrationD365.Feature.Orders.Engine
 {
     //[PipelineDisplayName(FulfillmentConstants.GenerateOrderLinesShipmentBlock)]
     public class SendOrderToD365 : PipelineBlock<Order, Order, CommercePipelineExecutionContext>
@@ -30,8 +31,8 @@ namespace SampleIntegrationD365.Feature.Inventory.Engine
         {
             Condition.Requires(arg).IsNotNull($"{this.Name}: The order cannot be null");
 
-            if (!arg.Lines.Any()
-                || !arg.Status.Equals(context.GetPolicy<KnownOrderStatusPolicy>().Released, StringComparison.OrdinalIgnoreCase))
+            if (!arg.Lines.Any())
+               // || !arg.Status.Equals(context.GetPolicy<KnownOrderStatusPolicy>().Released, StringComparison.OrdinalIgnoreCase))
             {
                 return arg;
             }
@@ -42,7 +43,7 @@ namespace SampleIntegrationD365.Feature.Inventory.Engine
 
                 var url = new Uri(new Uri(connection.BaseUrl), connection.CreateOrderHeaderRelativeUrl);
 
-                var request = new Dictionary<string, dynamic>
+                var orderRequest = new Dictionary<string, string>
                 {
                     {"dataAreaId","au"},
                     {"CurrencyCode","AUD"},
@@ -53,7 +54,7 @@ namespace SampleIntegrationD365.Feature.Inventory.Engine
                     {"SalesTaxGroupCode","GST"},
                 };
 
-                var stringResponse = await connection.PostJson(url, request);
+                var stringResponse = await connection.Post2(url, orderRequest);
                 var tokenResponse = JsonConvert.DeserializeObject<JToken>(stringResponse);
                 if (tokenResponse == null || tokenResponse["SalesOrderNumber"] == null)
                 {
@@ -68,14 +69,14 @@ namespace SampleIntegrationD365.Feature.Inventory.Engine
 
                 foreach (var line in arg.Lines.Where(l => l != null))
                 {
-                    request = new Dictionary<string, dynamic>
+                    var lineRequest = new Dictionary<string, dynamic>
                     {
                         {"SalesOrderNumber", orderNumber},
                         {"ItemNumber", line.ItemId.Split('|')[1]},
                         {"OrderedSalesQuantity", decimal.ToInt32(line.Quantity)},
                     };
 
-                    stringResponse = await connection.PostJson(url, request);
+                    stringResponse = await connection.Post(url, lineRequest);
                     tokenResponse = JsonConvert.DeserializeObject<JToken>(stringResponse);
                     if (tokenResponse == null || tokenResponse["LineCreationSequenceNumber"] == null)
                     {
